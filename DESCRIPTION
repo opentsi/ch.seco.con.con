@@ -9,8 +9,9 @@ Description: The ch.seco.con.con package provides versioned time series
     that sources the data from its original provider.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
-Imports: 
+Imports:
     desc,
+    digest,
     opentimeseries
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

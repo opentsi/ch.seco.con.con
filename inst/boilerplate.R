@@ -1,63 +1,98 @@
+## One-time archive initialisation script for ch.seco.con.con
+##
+## Unlike other OpenTSI archives, this dataset has no pre-existing vintage
+## history from a time series database API. We fetch the current SECO
+## swissdata CSV, treat the SECO publication date as the single initial
+## vintage, and import it as the archive's first commit.
+##
+## Run this script section by section from the repo root.
+
 library(deloRean)
 library(opentimeseries)
+library(tsbox)
+library(data.table)
+library(digest)
 
-## Example Step 2, Generate History
+## ── Step 1: Fetch the SECO quarterly CSV ─────────────────────────────────────
 
-library(tsdbapi)
-keys <- read_dataset_keys("ch.fso.indpau")
-length(keys)
-all_vintages <- read_ts_history(keys)
-str(all_vintages) # to see the latest vintage, if the series is up to date
+data_url <- "https://scheduler.swissdatas.ch/scheduled/ks-q.csv"
+csv_data <- read.csv(url(data_url))
+csv_data$date <- as.Date(csv_data$date)
 
-# read_ts_history returns names as key_YYYYMMDD; convert to key.YYYY-MM
-# so that create_vintage_dt can strip the .YYYY-MM suffix to recover the key
-vintage_date_str <- sub(".+_([0-9]{8})$", "\\1", names(all_vintages))
-vintage_dates <- as.Date(vintage_date_str, format = "%Y%m%d")
-names(all_vintages) <- sub("_([0-9]{4})([0-9]{2})[0-9]{2}$", ".\\1-\\2", names(all_vintages))
-# remove the dataset prefix so keys match the relative key structure in the archive
-names(all_vintages) <- sub("^ch\\.fso\\.indpau\\.", "", names(all_vintages))
-class(all_vintages) <- c(class(all_vintages), "tslist")
+## ── Step 2: Build tsl with one vintage (SECO last publish date) ──────────────
+##
+## Naming convention expected by create_vintage_dt:
+##   <type>.<structure>.<seas_adj>.<YYYY-MM>
+## The function strips the trailing .<YYYY-MM> to recover the series id.
 
+release_date   <- as.Date("2026-05-05")   # SECO source publish date (dataseries.org)
+vintage_suffix <- format(release_date, "%Y-%m")
 
-## Step 3: Create vintages data.table
-vintages_dt <- create_vintage_dt(vintage_dates, all_vintages)
-head(vintages_dt, n = 100)
+# how can you be sure the entire combinations exist, where is the list of keys?
+combos <- unique(csv_data[, c("type", "structure", "seas_adj")])
+
+tsl <- vector("list", nrow(combos))
+
+for (i in seq_len(nrow(combos))) {
+  type_val   <- combos$type[i]
+  struct_val <- combos$structure[i]
+  seas_val   <- combos$seas_adj[i]
+
+  subset <- csv_data[
+    csv_data$type      == type_val  &
+    csv_data$structure == struct_val &
+    csv_data$seas_adj  == seas_val, ]
+  subset <- subset[order(subset$date), ]
+
+  # Build quarterly ts object
+  start_month   <- as.integer(format(subset$date[1], "%m"))
+  start_year    <- as.integer(format(subset$date[1], "%Y"))
+  start_quarter <- ceiling(start_month / 3)
+
+  ts_obj <- ts(subset$value,
+               start     = c(start_year, start_quarter),
+               frequency = 4)
+
+  key_suffix        <- paste(type_val, struct_val, seas_val, sep = ".")
+  tsl[[i]]          <- ts_obj
+  names(tsl)[i]     <- paste0(key_suffix, ".", vintage_suffix)
+}
+
+class(tsl) <- c(class(tsl), "tslist")
+
+# One release date per series (all the same — single vintage)
+vintage_dates <- rep(release_date, nrow(combos))
+
+## ── Step 3: Create vintage data.table ────────────────────────────────────────
+
+vintages_dt <- create_vintage_dt(vintage_dates, tsl)
+head(vintages_dt)
+
+## ── Step 4: Import history (writes CSVs + git commits) ───────────────────────
 
 archive_import_history(vintages_dt, repository_path = ".")
 
-
-## Step 5: Write & Validate Metadata
-
-# check if info is available via api
-# metadata is usually available in german, i.e. locale = "de"
-indpau_meta <- read_dataset_ts_metadata("ch.fso.indpau", locale = "en")
+## ── Step 5: Render and validate metadata ─────────────────────────────────────
 
 render_metadata()
 meta <- read_metadata(".")
-validate_metadata(meta) # TRUE
+validate_metadata(meta)   # should return TRUE
 
-## Step 6: Write handle_update & process_data
+## ── Step 6: Seal the archive ─────────────────────────────────────────────────
 
-## Step 7: Seal Archive
-key <- "...."
 devtools::load_all()
-library(digest)
-checksum_input <- generate_checksum_input(key = key)
+checksum_input <- generate_checksum_input()
 archive_seal(checksum_input)
 
-## Step 8: Check CRON schedule 
-# check if the cron schedule in .github/workflows/update_data.yaml
-# is adequate for the dataset
+## ── Step 7: Final checks & automation ────────────────────────────────────────
 
-## Step 9: Final Checks & Automation
 devtools::load_all()
-handle_update(key = key)
+handle_update()   # should report "No update needed"
 
 library(devtools)
 check()
 document()
 
-## Step 10: Build Readme
-# 1. write an example tsplot into the last code snippet of the Readme.Rmd
-# 2. push the package & transfer to opentsi if needed (s.t. the example works)
-build_readme() # 3.
+## ── Step 8: Build README ─────────────────────────────────────────────────────
+# Add an example tsplot to the last code chunk in README.Rmd, then:
+build_readme()

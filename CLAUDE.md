@@ -45,6 +45,7 @@ handle_update()
 
 Both `generate_checksum_input()` and `process_data()` are empty stubs that must be implemented before the package is functional. The `boilerplate.R` script shows the patterns used for the one-time history import (already completed for this archive).
 
+
 ## To Dos
 i want you to create this data repository, based on the intial boilerplate given,
 
@@ -55,10 +56,12 @@ and based on other existing data packages of this form given. For this, look at 
 - https://github.com/opentsi/ch.kof.globalbaro
 
 
-the only thing that's different here is the new function `archive_seal` that has been newly added, and currently is only implemented in the us.fred.indrpo package.
+the only thing that's different here is that unlike the other repositories (see `boilerplate.R` in those packages) here we don't have the vintages already, but we need to create them ourselves. meaning, we need to create the first vintage today, and in `handle_update.R` and `process_data.R` make sure that you are able to detect whether a new version is created. 
 
-for more information about the setup of the data repositories, please check the vignettes folder in the deloRean package (see: https://github.com/opentsi/deloRean) and you can also check the package opentimeseries at https://github.com/opentsi/opentimeseries
+As a template for the `boilerplate.R` and `process_date.R` use this:
 
-please start by finishing the commands in boilerplate.R (reference /ch.kof.barometer and /ch.kof.globalbaro to see what has been done there and apply the fundamentals to this dataset.)
+https://dataseries.org/d/ch_seco_concon?dims=type%3Dindex%3Bstructure%3Dks_i63_index_q%3Bseas_adj%3Dcsa
 
-To solve this task, you dont need to look at my other directories, just the remote github packages.
+https://github.com/cynkra/dataseries-data/blob/main/datasets/ch_seco_concon.md
+
+and https://github.com/cynkra/dataseries-data to fetch the data.
