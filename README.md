@@ -1,0 +1,72 @@
+
+# ch.seco.con.con
+
+Swiss consumer confidence survey data from the State Secretariat for
+Economic Affairs (SECO), versioned as an OpenTSI archive. The dataset
+covers 39 quarterly time series back to 1972 Q4: the headline 6.3
+consumer sentiment index plus 12 component balance series, each
+available raw (`na`) and seasonally + calendar adjusted (`csa`), and
+both as index values and standard deviations.
+
+Data are fetched directly from the SECO swissdata endpoint
+(`scheduler.swissdatas.ch`) and versioned on each publication (roughly
+quarterly).
+
+## Browse Time Series Data
+
+You can use GitHub’s ability to render CSV files to explore the datasets
+directly in the browser under `data-raw/csv/`.
+
+## Basic Data Consumption via opentimeseries
+
+``` r
+remotes::install_github("opentsi/opentimeseries")
+library(opentimeseries)
+
+# Fetch the headline consumer sentiment index (all vintages)
+ts <- read_open_ts(
+  series        = "index.ks_i63_index_q.csa",
+  remote_archive = "opentsi/ch.seco.con.con"
+)
+ts
+```
+
+Given a unique time series identifier and a GitHub repo,
+*opentimeseries* will return a time series and long format `data.table`.
+
+## Basic Usage
+
+``` r
+library(opentimeseries)
+
+# Most recent vintage of the headline index
+ts <- read_open_ts(
+  series        = "index.ks_i63_index_q.csa",
+  remote_archive = "opentsi/ch.seco.con.con"
+)
+```
+
+By specifying a date you can obtain the vintage that was available at
+that point in time — useful for real-time forecasting benchmarks.
+
+Because time series data can be revised, storing vintages is important
+to monitor data revisions. Here’s a quick visual comparison of two
+vintages:
+
+Currently there is only 1 vintage, hence only one version of this time
+series will be plotted
+
+``` r
+library(opentimeseries)
+library(tsbox)
+
+ts_latest <- read_open_ts(
+  series        = "index.ks_i63_index_q.csa",
+  remote_archive = "opentsi/ch.seco.con.con"
+)
+ts_latest$id <- "csa.latest"
+ts_plot(ts_latest)
+#> [time]: 'date'
+```
+
+![](man/figures/README-unnamed-chunk-3-1.png)<!-- -->

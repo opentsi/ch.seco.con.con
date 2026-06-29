@@ -62,6 +62,8 @@ in time — useful for real-time forecasting benchmarks.
 Because time series data can be revised, storing vintages is important to monitor
 data revisions. Here's a quick visual comparison of two vintages:
 
+Currently there is only 1 vintage, hence only one version of this time series will be plotted
+
 ```{r}
 library(opentimeseries)
 library(tsbox)
