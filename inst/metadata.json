@@ -33,11 +33,7 @@
   "aggregate": {
     "all": "mean"
   },
-  "dim_order": [
-    "type",
-    "structure",
-    "seas_adj"
-  ],
+  "dim_order": ["type", "structure", "seas_adj"],
   "hierarchy": {
     "structure": {
       "ks_i63_index_q": {},
@@ -185,5 +181,5 @@
       }
     }
   },
-  "update_checksum": "6581ebb0e81489b8ed26fd9fb5cedf5481f735ee96812d7a1bcc78ea02104344"
+  "update_checksum": "57c9778d49a10ac883410f6cbe6b305c2357c2fec594c0e00eda4b204218d1f8"
 }
